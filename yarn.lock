@@ -5449,13 +5449,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:*, @types/jest@npm:29.5.8":
-  version: 29.5.8
-  resolution: "@types/jest@npm:29.5.8"
+"@types/jest@npm:*, @types/jest@npm:29.5.12":
+  version: 29.5.12
+  resolution: "@types/jest@npm:29.5.12"
   dependencies:
     expect: ^29.0.0
     pretty-format: ^29.0.0
-  checksum: ca8438a5b4c098c8c023e9d5b279ea306494a1d0b5291cfb498100fa780377145f068b2a021d545b0398bbe0328dcc37044dd3aaf3c6c0fe9b0bef7b46a63453
+  checksum: 19b1efdeed9d9a60a81edc8226cdeae5af7479e493eaed273e01243891c9651f7b8b4c08fc633a7d0d1d379b091c4179bbaa0807af62542325fd72f2dd17ce1c
   languageName: node
   linkType: hard
 
@@ -6066,7 +6066,7 @@ __metadata:
     "@types/babel__core": ^7.20.1
     "@types/debug": ^4.1.8
     "@types/is-glob": ^4.0.2
-    "@types/jest": 29.5.8
+    "@types/jest": 29.5.12
     "@types/jest-specific-snapshot": ^0.5.6
     "@types/marked": ^5.0.0
     "@types/natural-compare": ^1.4.1
