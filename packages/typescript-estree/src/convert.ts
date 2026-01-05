@@ -331,24 +331,19 @@ export class Converter {
   /**
    * Converts a TypeScript node into an ESTree node.
    * @param child the child ts.Node
-   * @param parent parentNode
    * @returns the converted ESTree node
    */
-  private convertChild(child?: ts.Node, parent?: ts.Node): any {
-    return this.converter(child, parent, false);
+  private convertChild(child?: ts.Node): any {
+    return this.converter(child, false);
   }
 
   /**
    * Converts TypeScript node array into an ESTree node list.
    * @param children the child `ts.NodeArray` or `ts.Node[]`
-   * @param parent parentNode
    * @returns the converted ESTree node list
    */
-  private convertChildren(
-    children: ts.Node[] | ts.NodeArray<ts.Node>,
-    parent?: ts.Node,
-  ): any[] {
-    return children.map(child => this.converter(child, parent, false));
+  private convertChildren(children: ts.Node[] | ts.NodeArray<ts.Node>): any[] {
+    return children.map(child => this.converter(child, false));
   }
 
   /**
@@ -357,8 +352,8 @@ export class Converter {
    * @param parent parentNode
    * @returns the converted ESTree node
    */
-  private convertPattern(child?: ts.Node, parent?: ts.Node): any {
-    return this.converter(child, parent, true);
+  private convertPattern(child?: ts.Node): any {
+    return this.converter(child, true);
   }
 
   /**
@@ -465,15 +460,10 @@ export class Converter {
   /**
    * Converts a TypeScript node into an ESTree node.
    * @param node the child ts.Node
-   * @param parent parentNode
    * @param allowPattern flag to determine if patterns are allowed
    * @returns the converted ESTree node
    */
-  private converter(
-    node?: ts.Node,
-    parent?: ts.Node,
-    allowPattern?: boolean,
-  ): any {
+  private converter(node?: ts.Node, allowPattern?: boolean): any {
     /**
      * Exit early for null and undefined
      */
@@ -488,10 +478,7 @@ export class Converter {
       this.allowPattern = allowPattern;
     }
 
-    const result = this.convertNode(
-      node as TSNode,
-      (parent ?? node.parent) as TSNode,
-    );
+    const result = this.convertNode(node as TSNode);
 
     this.registerTSNodeInNodeMap(node, result);
 
@@ -662,7 +649,7 @@ export class Converter {
    * Identify and convert each relevant TypeScript SyntaxKind
    * @returns the converted ESTree node
    */
-  private convertNode(node: TSNode, parent: TSNode): TSESTree.Node | null {
+  private convertNode(node: TSNode): TSESTree.Node | null {
     switch (node.kind) {
       case SyntaxKind.SourceFile: {
         return this.createNode<TSESTree.Program>(node, {
@@ -994,7 +981,7 @@ export class Converter {
           method: false,
           optional: false,
           shorthand: false,
-          value: this.converter(node.initializer, node, this.allowPattern),
+          value: this.converter(node.initializer, this.allowPattern),
         });
       }
 
@@ -1135,7 +1122,7 @@ export class Converter {
           | TSESTree.Property
           | TSESTree.TSAbstractMethodDefinition;
 
-        if (parent.kind === SyntaxKind.ObjectLiteralExpression) {
+        if (node.parent.kind === SyntaxKind.ObjectLiteralExpression) {
           method.params = this.convertChildren(node.parameters);
 
           result = this.createNode<TSESTree.Property>(node, {
@@ -1313,8 +1300,8 @@ export class Converter {
         });
 
       case SyntaxKind.BindingElement: {
-        if (parent.kind === SyntaxKind.ArrayBindingPattern) {
-          const arrayItem = this.convertChild(node.name, parent);
+        if (node.parent.kind === SyntaxKind.ArrayBindingPattern) {
+          const arrayItem = this.convertChild(node.name);
 
           if (node.initializer) {
             return this.createNode<TSESTree.AssignmentPattern>(node, {
@@ -1530,7 +1517,7 @@ export class Converter {
             result.loc = getLocFor(result.range, this.ast);
           }
         } else {
-          parameter = result = this.convertChild(node.name, parent);
+          parameter = result = this.convertChild(node.name);
         }
 
         if (node.type) {
@@ -1759,10 +1746,7 @@ export class Converter {
                 declaration: null,
                 exportKind: node.isTypeOnly ? 'type' : 'value',
                 source: this.convertChild(node.moduleSpecifier),
-                specifiers: this.convertChildren(
-                  node.exportClause.elements,
-                  node,
-                ),
+                specifiers: this.convertChildren(node.exportClause.elements),
               },
               'assertions',
               'attributes',
@@ -1793,10 +1777,11 @@ export class Converter {
 
       case SyntaxKind.ExportSpecifier: {
         const local = node.propertyName ?? node.name;
+        const declaration = node.parent.parent;
         if (
           local.kind === SyntaxKind.StringLiteral &&
-          parent.kind === SyntaxKind.ExportDeclaration &&
-          parent.moduleSpecifier?.kind !== SyntaxKind.StringLiteral
+          declaration.kind === SyntaxKind.ExportDeclaration &&
+          declaration.moduleSpecifier?.kind !== SyntaxKind.StringLiteral
         ) {
           this.#throwError(
             local,
@@ -1918,7 +1903,7 @@ export class Converter {
           return this.createNode<TSESTree.AssignmentPattern>(node, {
             type: AST_NODE_TYPES.AssignmentPattern,
             decorators: [],
-            left: this.convertPattern(node.left, node),
+            left: this.convertPattern(node.left),
             optional: false,
             right: this.convertChild(node.right),
             typeAnnotation: undefined,
@@ -1932,7 +1917,6 @@ export class Converter {
           ...expressionType,
           left: this.converter(
             node.left,
-            node,
             expressionType.type === AST_NODE_TYPES.AssignmentExpression,
           ),
           right: this.convertChild(node.right),
@@ -2073,7 +2057,7 @@ export class Converter {
           type: AST_NODE_TYPES.Literal,
           raw: node.getText(),
           value:
-            parent.kind === SyntaxKind.JsxAttribute
+            node.parent.kind === SyntaxKind.JsxAttribute
               ? unescapeStringLiteralText(node.text)
               : node.text,
         });
@@ -2417,7 +2401,7 @@ export class Converter {
       }
 
       case SyntaxKind.ParenthesizedExpression:
-        return this.convertChild(node.expression, parent);
+        return this.convertChild(node.expression);
 
       case SyntaxKind.TypeAliasDeclaration: {
         const result = this.createNode<TSESTree.TSTypeAliasDeclaration>(node, {
@@ -2506,7 +2490,7 @@ export class Converter {
       }
 
       case SyntaxKind.ExpressionWithTypeArguments: {
-        const parentKind = parent.kind;
+        const parentKind = node.parent.kind;
         const type =
           parentKind === SyntaxKind.InterfaceDeclaration
             ? AST_NODE_TYPES.TSInterfaceHeritage
@@ -2560,10 +2544,7 @@ export class Converter {
               );
             }
             interfaceExtends.push(
-              this.convertChild(
-                heritageType,
-                node,
-              ) as TSESTree.TSInterfaceHeritage,
+              this.convertChild(heritageType) as TSESTree.TSInterfaceHeritage,
             );
           }
         }
@@ -2984,8 +2965,8 @@ export class Converter {
       case SyntaxKind.NamedTupleMember: {
         const member = this.createNode<TSESTree.TSNamedTupleMember>(node, {
           type: AST_NODE_TYPES.TSNamedTupleMember,
-          elementType: this.convertChild(node.type, node),
-          label: this.convertChild(node.name, node),
+          elementType: this.convertChild(node.type),
+          label: this.convertChild(node.name),
           optional: node.questionToken != null,
         });
 
