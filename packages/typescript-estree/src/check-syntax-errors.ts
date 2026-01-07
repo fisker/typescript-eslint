@@ -104,32 +104,38 @@ export function checkSyntaxError(
         const variableDeclarationList = node.parent;
         const kind = getDeclarationKind(variableDeclarationList);
 
-        if (kind === 'using' || kind === 'await using') {
+        if (
+          (kind === 'using' || kind === 'await using') &&
+          variableDeclarationList.parent.kind === SyntaxKind.ForInStatement
+        ) {
+          throw createError(
+            variableDeclarationList,
+            `The left-hand side of a 'for...in' statement cannot be a '${kind}' declaration.`,
+          );
+        }
+
+        if (
+          variableDeclarationList.parent.kind === SyntaxKind.ForStatement ||
+          variableDeclarationList.parent.kind === SyntaxKind.VariableStatement
+        ) {
           if (
-            variableDeclarationList.parent.kind === SyntaxKind.ForInStatement
+            (kind === 'using' || kind === 'await using' || kind === 'const') &&
+            !node.initializer
           ) {
             throw createError(
-              variableDeclarationList,
-              `The left-hand side of a 'for...in' statement cannot be a '${kind}' declaration.`,
+              node,
+              `'${kind}' declarations must be initialized.`,
             );
           }
 
           if (
-            variableDeclarationList.parent.kind === SyntaxKind.ForStatement ||
-            variableDeclarationList.parent.kind === SyntaxKind.VariableStatement
+            (kind === 'using' || kind === 'await using') &&
+            node.name.kind !== SyntaxKind.Identifier
           ) {
-            if (!node.initializer) {
-              throw createError(
-                node,
-                `'${kind}' declarations must be initialized.`,
-              );
-            }
-            if (node.name.kind !== SyntaxKind.Identifier) {
-              throw createError(
-                node.name,
-                `'${kind}' declarations may not have binding patterns.`,
-              );
-            }
+            throw createError(
+              node.name,
+              `'${kind}' declarations may not have binding patterns.`,
+            );
           }
         }
 
